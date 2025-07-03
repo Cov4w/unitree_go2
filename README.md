@@ -15,6 +15,7 @@
 ### 기존 ip를 통해 제어하는 방식 말고 WebRTC를 이용해 제어하는 방식으로 정함
 ### WebRTC 예제 1 (https://github.com/legion1581/go2_webrtc_connect)
 - 해당 오픈소스는 unitree go2의 기본 기능들을 WebRTC를 이용해 원격으로 제어 할 수 있는 예제를 제공
+  - 특징 : go2와 WebRTC 연결 방식이 여러가지이고 난이도가 비교적 쉬움
 ### WebRTC 예제 2 (https://github.com/tfoldi/go2-webrtc)
 - 해당 오픈소스는 WebRTC를 이용해 카메라, 오디오, Lidar 정보등을 웹 페이지 환경에서 확인하고 제어 할 수 있는 예제 제공
-
+  - 특징 : 웹 브라우저에서 인터페이스로 로봇을 제어 할 수 있는 오픈소스 제공
