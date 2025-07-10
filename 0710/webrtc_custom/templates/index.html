@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>WebRTC Video Stream</title>
+    <style>
+        #control-panel { display: none; margin-top: 20px; }
+        .arrow-btn, .action-btn {
+            width: 60px; height: 60px; font-size: 2em; margin: 5px;
+        }
+        .action-btn { width: 120px; font-size: 1em; }
+    </style>
+</head>
+<body>
+    <h2>실시간 비디오 스트림</h2>
+    <img src="{{ url_for('video_feed') }}" width="640" height="360" />
+
+    <br>
+    <button id="slam-btn">START CONTROL</button>
+
+    <div id="control-panel">
+        <div>
+            <button class="arrow-btn" onclick="move('forward')">▲</button>
+        </div>
+        <div>
+            <button class="arrow-btn" onclick="move('left')">◀</button>
+            <button class="arrow-btn" onclick="move('stop')">■</button>
+            <button class="arrow-btn" onclick="move('right')">▶</button>
+        </div>
+        <div>
+            <button class="arrow-btn" onclick="move('backward')">▼</button>
+        </div>
+        <div style="margin-top:20px;">
+            <button class="action-btn" onclick="move('sitdown')">SIT DOWN</button>
+            <button class="action-btn" onclick="move('situp')">STAND UP</button>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('slam-btn').onclick = function() {
+            document.getElementById('control-panel').style.display = 'block';
+        };
+
+        function move(direction) {
+            fetch('/move', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ direction: direction })
+            }).then(res => res.json()).then(data => {
+                // 필요시 응답 처리
+            });
+        }
+    </script>
+</body>
+</html>
