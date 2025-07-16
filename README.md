@@ -19,3 +19,101 @@
 ### WebRTC 예제 2 (https://github.com/tfoldi/go2-webrtc)
 - 해당 오픈소스는 WebRTC를 이용해 카메라, 오디오, Lidar 정보등을 웹 페이지 환경에서 확인하고 제어 할 수 있는 예제 제공
   - 특징 : 웹 브라우저에서 인터페이스로 로봇을 제어 할 수 있는 오픈소스 제공
+# 📌 WebRTC
+## 웹 브라우저나 모바일 앱 간에 실시간으로 플러그인의 도움 없이 오디오, 비디오, 데이터를 서로 전송하고 통신할 수 있도록 설계된 API입니다.
+### 특징 및 기능
+- P2P 서비스
+-  오디오 및 비디오 스트림 전송
+-  실시간 데이터 통신
+
+### 시그널링 서버
+- P2P 통신을 위한 중계 서버
+- P2P 서비스는 서로 접속 정보들을 알 수 없기 때문에 각 peer들의 최소화된 개인 정보를 노출하여 연결을 해결하고 설정하는 과정이 필요합니다.
+
+### SDP와 ICE 정보 교환
+- SDP에는 코덱, 소스 주소, 오디오 및 비디오의 미디어 유형, 기타 속성과 같은 피어 연결에 대한 일부 정보 포함되어 있습니다.
+- ICE는 NAT/Firewall 뒤에서도 연결이 될 수 있게 STUN 및 TURN 프로토콜의 조합을 사용하여 NAT를 통해 해당 연결을 만드는데 <br>다양한 네트워크 후보를 제시하는 WebRTC의 핵심입니다.
+
+### TURN 서버 : 
+- STA-T 연결 모드에서는 일반적으로 연결이 불가능해 모든 실시간 오디오/비디오/데이터를 중계해주는 TURN 서버가 필요합니다.
+- 시그널링/SDP/ICE 교환 과정을 모두 거친 뒤에도 실제 미디어 데이터는 TURN 서버를 경유합니다.
+
+### 사용된 연결 방식 : STA-T
+## STA-T 요청 순서 
+- 시리얼 넘버, 유저 아이디, 비밀번호 입력
+```
+conn = Go2WebRTCConnection(WebRTCConnectionMethod.Remote, serialNumber="B42D2000XXXXXXXX", username="email@gmail.com", password="pass")
+```
+- 유저 로그인 → fetch_token() → access_token 발급
+  - 인증 API 호출하여 accesss token 발급
+```
+def fetch_token(email: str, password: str) -> str:
+    logging.info("Obtaining TOKEN...")
+    path = "login/email"
+    body = {
+        'email': email,
+        'password': _generate_md5(password)
+    }
+    response = make_remote_request(path, body, token="", method="POST")
+    if response.get("code") == 100:
+        data = response.get("data")
+        access_token = data.get("accessToken")
+        return access_token
+    else:
+        logging.error("Failed to receive token")
+        return None
+```
+- 공개 키 요청 → 암호화 준비
+
+- TURN 정보 요청 → fetch_turn_server_info()
+  - 시리얼 넘버와 공개키로 TURN 서버 정보를 요청
+```
+def fetch_turn_server_info(serial: str, access_token: str, public_key: RSA.RsaKey) -> dict:
+    logging.info("Obtaining TURN server info...")
+    aes_key = generate_aes_key()
+    path = "webrtc/account"
+    body = {
+        "sn": serial,
+        "sk": rsa_encrypt(aes_key, public_key)
+    }
+    response = make_remote_request(path, body, token=access_token, method="POST")
+    if response.get("code") == 100:
+        return json.loads(aes_decrypt(response['data'], aes_key))
+    else:
+        logging.error("Failed to receive TURN server info")
+        return None
+```
+- 시그널링 서버로 send_sdp_to_remote_peer() → Offer 암호화 전송
+  - SDP 교환 절차
+```
+def send_sdp_to_local_peer(ip, sdp):
+    try:
+        # Try the old method first
+        logging.info("Trying to send SDP using the old method...")
+        response = send_sdp_to_local_peer_old_method(ip, sdp)
+        if response:
+            logging.info("SDP successfully sent using the old method.")
+            return response
+        else:
+            logging.warning("Old method failed, trying the new method...")
+    except Exception as e:
+        logging.error(f"An error occurred with the old method: {e}")
+        logging.info("Falling back to the new method...")
+
+    # Now try the new method after the old method has failed
+    try:
+        response = send_sdp_to_local_peer_new_method(ip, sdp)  # Use the new method here
+        if response:
+            logging.info("SDP successfully sent using the new method.")
+            return response
+        else:
+            logging.error("New method failed to send SDP.")
+            return None
+    except Exception as e:
+        logging.error(f"An error occurred with the new method: {e}")
+        return None
+```
+
+- Answer 수신 → AES 복호화 & RemoteDescription 설정
+
+- ICE 연결 진행 → TURN 서버 포함 ICE 후보 처리
